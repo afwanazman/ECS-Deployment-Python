@@ -26,20 +26,33 @@ This project contains scripts to automate the deployment of an ECS service using
    ```
 
 3. **Set up environment variables:**
-   Make sure to set the following environment variables in your environment:
-   - `AWS_REGION`
-   - `VPC_ID`
-   - `SUBNETS` (comma-separated)
-   - `SECURITY_GROUPS` (comma-separated)
-   - `ALB_ARN`
-   - `PROJECT_NAME`
-   - `ECR_REPO_URI`
-   - `DOMAIN_NAME`
-   - `ECS_CLUSTER`
-   - `IMAGE_TAG`
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ZONE_ID`
-   - `ALB_DNS_NAME`
+   Create a `.env` file in the root directory of your project and add the following variables:
+   ```plaintext
+   # Project Info
+   PROJECT_NAME="your_project_name"
+   DOMAIN_NAME="your_domain_name"
+
+   # AWS Info
+   AWS_REGION="your_aws_region"
+   VPC_ID="your_vpc_id"
+   SUBNETS="your_subnets"
+   SECURITY_GROUPS="your_security_groups"
+   ALB_ARN="your_alb_arn"
+   ECS_CLUSTER="your_ecs_cluster"
+   IMAGE_TAG="your_image_tag"
+   NEW_IMG="your_new_image"
+
+   # Sensitive Info
+   ACCESS_KEY="your_access_key"
+   SECRET_TOKEN="your_secret_token"
+   CLOUDFLARE_API_TOKEN="your_cloudflare_api_token"
+
+   # Additional Variables for config.py
+   TASK_ROLE_ARN="your_task_role_arn"
+   EXECUTION_ROLE_ARN="your_execution_role_arn"
+   CLOUDFLARE_ZONE_ID="your_cloudflare_zone_id"
+   ALB_DNS_NAME="your_alb_dns_name"
+   ```
 
 4. **Run the starter script:**
    Execute the starter script to set environment variables, check and create ECR repository, push Docker image, and run the main script:
@@ -87,7 +100,4 @@ python rollback.py <deployment_info_file>
 The scripts use Python's built-in logging module to log information and errors. Logs are configured to display at the `INFO` level.
 
 ## Contributing
-Feel free to open issues or submit pull requests if you have any improvements or bug fixes.
-
-## License
-This project is licensed under the MIT License.
+Feel free to open issues or submit pull requests if you have any suggestions or improvements.
