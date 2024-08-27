@@ -1,6 +1,7 @@
 import logging
-from utils import create_log_group, create_target_group, get_next_priority, create_rule, register_task_definition, create_ecs_service, create_cname_record_cloudflare, save_deployment_info
-from config import log_group, alb_arn, domain_name
+import time
+from utils import create_log_group, create_target_group, get_next_priority, create_rule, register_task_definition, create_ecs_service, create_cname_record_cloudflare, save_deployment_info, elbv2_client
+from config import log_group, alb_arn, domain_name, cloudflare_api_token, cloudflare_zone_id, alb_dns_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +20,7 @@ def main():
             create_ecs_service(task_definition_arn, target_group_arn)
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             create_cname_record_cloudflare(cloudflare_api_token, cloudflare_zone_id, domain_name, alb_dns_name)
-            save_deployment_info(task_definition_arn, target_group_arn, https_listener_arn, rules_list)
+            save_deployment_info(task_definition_arn, target_group_arn, https_listener_arn, rules_list, timestamp)
 
 if __name__ == "__main__":
     main()

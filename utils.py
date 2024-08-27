@@ -2,6 +2,7 @@ import boto3
 import os
 import json
 import logging
+import requests
 from config import aws_region, access, secret, vpc_id, project_name, log_group, ecs_cluster, container_name, task_family_name, repo_uri, image_tag, task_role_arn, execution_role_arn, subnets, security_groups, domain_name, cloudflare_api_token, cloudflare_zone_id, alb_dns_name
 
 # Configure logging
@@ -120,7 +121,6 @@ def register_task_definition():
                     'startPeriod': 60
                 }
             }],
-            enableExecuteCommand=true,
             taskRoleArn=task_role_arn,
             executionRoleArn=execution_role_arn,
             requiresCompatibilities=['FARGATE'],
@@ -187,7 +187,7 @@ def save_deployment_info(task_definition_arn, target_group_arn, listener_arn, ru
         deployments_dir = os.path.join(script_dir, 'deployments')
         os.makedirs(deployments_dir, exist_ok=True)
         file_name = os.path.join(deployments_dir, f'deployment_info_{project_name}_{timestamp}.json')
-        
+
         with open(file_name, 'w') as f:
             json.dump({
                 'ecs_cluster': ecs_cluster,
@@ -203,4 +203,5 @@ def save_deployment_info(task_definition_arn, target_group_arn, listener_arn, ru
             }, f)
         logger.info(f"Deployment information saved to {file_name}")
     except Exception as e:
-        logger.error(f"Error saving deployment information: {e}")
+        logger.error(f"Error saving deployment info: {e}")
+
