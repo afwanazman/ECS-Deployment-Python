@@ -87,6 +87,15 @@ def delete_cname_record_cloudflare(api_token, zone_id, domain_name):
     except requests.exceptions.RequestException as e:
         logger.error(f"Error deleting CNAME record: {e}")
 
+def remove_deployment_info(file_path):
+    try:
+        os.remove(file_path)
+        logger.info(f"Deployment info file '{file_path}' removed successfully.")
+    except FileNotFoundError:
+        logger.warning(f"Deployment info file '{file_path}' not found.")
+    except Exception as e:
+        logger.error(f"Error removing deployment info file: {e}")
+
 def main():
     if len(sys.argv) != 2:
         logger.error("Usage: python rollback.py <deployment_info_file>")
@@ -115,6 +124,7 @@ def main():
     delete_cname_record_cloudflare(cloudflare_api_token, cloudflare_zone_id, domain_name)
 
     logger.info("Rollback completed.")
+    remove_deployment_info(deployment_info_file)
 
 if __name__ == "__main__":
     main()
