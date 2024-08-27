@@ -20,9 +20,10 @@ This project contains scripts to automate the deployment of an ECS service using
    ```
 
 2. **Install dependencies:**
-   Ensure you have `boto3` and `requests` installed. You can install them using pip:
+   Ensure you have `boto3`, `requests` and `python-dotenv` installed. You can install them using pip:
    ```bash
-   pip install boto3 requests
+   pip install boto3 requests python-dotenv
+
    ```
 
 3. **Set up environment variables:**
