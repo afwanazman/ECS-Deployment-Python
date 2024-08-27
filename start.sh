@@ -9,8 +9,6 @@ else
     exit 1
 fi
 
-echo "SUBNETS: $SUBNETS"
-
 check_ecr_repo() {
     local repo_name="${PROJECT_NAME}"
     local ecr_repo_uri
