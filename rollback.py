@@ -3,6 +3,7 @@ import boto3
 import logging
 import sys
 import requests
+import os
 from keys import access, secret
 
 # Configure logging
