@@ -4,6 +4,7 @@ import logging
 import sys
 import requests
 import os
+import time
 from keys import access, secret
 
 # Configure logging
@@ -97,6 +98,36 @@ def remove_deployment_info(file_path):
     except Exception as e:
         logger.error(f"Error removing deployment info file: {e}")
 
+def wait_for_service_draining(cluster, service_name):
+    ecs_client = boto3.client('ecs')
+    start_time = time.time()
+
+    while True:
+        response = ecs_client.describe_services(
+            cluster=cluster,
+            services=[service_name]
+        )
+
+        services = response['services']
+        if len(services) == 0:
+            print(f"Service '{service_name}' not found.")
+            break
+
+        service = services[0]
+        status = service['status']
+
+        if status == 'DRAINING':
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= max_wait_time:
+                print(f"ECS service '{service_name}' has been draining for too long. Exiting.")
+                break
+            if elapsed_time % (check_interval * 5) < check_interval:
+                print(f"ECS service '{service_name}' is still draining. Waiting...")
+            time.sleep(check_interval)  # Wait before checking again
+        else:
+            print(f"ECS service '{service_name}' is no longer draining.")
+            break 
+
 def main():
     if len(sys.argv) != 2:
         logger.error("Usage: python rollback.py <deployment_info_file>")
@@ -119,6 +150,7 @@ def main():
         exit(1)
 
     delete_ecs_service(ecs_cluster, service_name)
+    wait_for_service_draining(ecs_cluster, service_name)
     deregister_task_definition(task_definition_arn)
     delete_alb_rules(rules_list)
     delete_target_group(target_group_arn)
@@ -129,3 +161,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
