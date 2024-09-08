@@ -2,6 +2,7 @@ import boto3
 import os
 import json
 import logging
+import time
 import requests
 from config import aws_region, access, secret, vpc_id, project_name, log_group, ecs_cluster, container_name, task_family_name, repo_uri, image_tag, task_role_arn, execution_role_arn, subnets, security_groups, domain_name, cloudflare_api_token, cloudflare_zone_id, alb_dns_name
 
@@ -124,7 +125,7 @@ def register_task_definition():
             taskRoleArn=task_role_arn,
             executionRoleArn=execution_role_arn,
             requiresCompatibilities=['FARGATE'],
-            cpu='256',
+            cpu='512',
             memory='2048',
             runtimePlatform={'cpuArchitecture': 'X86_64', 'operatingSystemFamily': 'LINUX'},
             tags=[
@@ -139,6 +140,43 @@ def register_task_definition():
     except Exception as e:
         logger.error(f"Error registering task definition: {e}")
         return None
+
+def wait_for_service_stable(service_name, cluster_name, max_wait_time=600, interval=30):
+    """Wait for ECS service to be stable.
+
+    Args:
+        service_name (str): The name of the ECS service.
+        cluster_name (str): The name of the ECS cluster.
+        max_wait_time (int): Maximum time to wait for the service to become stable, in seconds.
+        interval (int): Time interval between checks, in seconds.
+
+    Returns:
+        bool: True if the service became stable, False if the timeout was reached.
+    """
+    start_time = time.time()
+    while True:
+        response = ecs_client.describe_services(cluster=cluster_name, services=[service_name])
+        services = response['services']
+
+        if not services:
+            logger.error("No services found.")
+            return False
+
+        service = services[0]
+        running_tasks = service['runningCount']
+        desired_tasks = service['desiredCount']
+        status = service['status']
+
+        if running_tasks == desired_tasks and status == 'ACTIVE':
+            logger.info(f"ECS service '{service_name}' completed.")
+            return True
+
+        if time.time() - start_time > max_wait_time:
+            logger.error(f"Timed out waiting for ECS service '{service_name}' to become stable.")
+            return False
+
+        logger.info(f"ECS service '{service_name}' is in progress. Waiting...")
+        time.sleep(interval)
 
 def create_ecs_service(task_definition_arn, target_group_arn):
     try:
@@ -155,11 +193,23 @@ def create_ecs_service(task_definition_arn, target_group_arn):
                     'securityGroups': security_groups,
                     'assignPublicIp': 'DISABLED'
                 }
-            }
+            },
+            enableExecuteCommand=True
         )
         logger.info(f"ECS service '{project_name}' created successfully.")
+
+        # Wait for the service to be stable
+        if wait_for_service_stable(project_name, ecs_cluster):
+            logger.info(f"ECS service '{project_name}' is completed and running.")
+        else:
+            logger.error(f"ECS service '{project_name}' did not become stable.")
     except Exception as e:
         logger.error(f"Error creating ECS service: {e}")
+
+        """logger.info(f"ECS service '{project_name}' created successfully.")
+    except Exception as e:
+        logger.error(f"Error creating ECS service: {e}")
+        """
 
 def create_cname_record_cloudflare(api_token, zone_id, domain_name, target):
     url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
@@ -180,7 +230,7 @@ def create_cname_record_cloudflare(api_token, zone_id, domain_name, target):
         logger.info(f"CNAME record created successfully for {domain_name} pointing to {target}.")
     except requests.exceptions.RequestException as e:
         logger.error(f"Error creating CNAME record: {e}")
-        
+
 def save_deployment_info(task_definition_arn, target_group_arn, listener_arn, rules_list, timestamp):
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -200,7 +250,7 @@ def save_deployment_info(task_definition_arn, target_group_arn, listener_arn, ru
                 'cloudflare_api_token': cloudflare_api_token,
                 'cloudflare_zone_id': cloudflare_zone_id,
                 'alb_dns_name': alb_dns_name
-            }, f)
+            }, f, indent=4)
         logger.info(f"Deployment information saved to {file_name}")
     except Exception as e:
         logger.error(f"Error saving deployment info: {e}")

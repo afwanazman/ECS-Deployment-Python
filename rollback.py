@@ -98,7 +98,7 @@ def remove_deployment_info(file_path):
     except Exception as e:
         logger.error(f"Error removing deployment info file: {e}")
 
-def wait_for_service_draining(cluster, service_name):
+def wait_for_service_draining(cluster, service_name, max_wait_time=600, check_interval=30):
     ecs_client = boto3.client('ecs')
     start_time = time.time()
 
